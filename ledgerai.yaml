@@ -1,0 +1,1380 @@
+openapi: 3.1.0
+
+info:
+  title: LedgerLens.ai Platform API
+  version: 1.0.0
+  description: Financial Document Q&A Assistant API
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Companies
+  - name: Watchlist
+  - name: Documents
+  - name: MCP
+  - name: RAG
+  - name: Chat
+  - name: Compare
+  - name: Analyst Reports
+  - name: Dashboard
+  - name: Scheduler
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Authenticate user
+      description: Authenticate a user and receive a JWT access token.
+      operationId: authLogin
+      security: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/LoginSuccess"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /auth/profile:
+    get:
+      tags:
+        - Auth
+      summary: Get authenticated user profile
+      description: Fetch the authenticated user's profile.
+      operationId: getProfile
+
+      responses:
+        "200":
+          $ref: "#/components/responses/ProfileSuccess"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /companies/search:
+    get:
+      tags:
+        - Companies
+      summary: Search company by symbol
+      description: Search for a company by its NSE ticker symbol.
+      operationId: searchCompany
+
+      parameters:
+        - $ref: "#/components/parameters/SearchSymbolQuery"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/CompanySearchSuccess"
+        
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /companies/{symbol}:
+    get:
+      tags:
+        - Companies
+      summary: Get company profile
+      description: Get full company profile including document count.
+      operationId: getCompany
+
+      parameters:
+        - $ref: "#/components/parameters/SymbolParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/CompanyDetailsSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /watchlist:
+    post:
+      tags:
+        - Watchlist
+      summary: Add company to watchlist
+      description: Add a company to the authenticated user's watchlist with a refresh frequency.
+      operationId: createWatchlist
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistRequest"
+
+      responses:
+        "201":
+          $ref: "#/components/responses/WatchlistCreateSuccess"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      tags:
+        - Watchlist
+      summary: Get watchlist
+      description: Get all watchlist entries for the authenticated user.
+      operationId: getWatchlist
+
+      responses:
+        "200":
+          $ref: "#/components/responses/WatchlistListSuccess"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /watchlist/{symbol}:
+    put:
+      tags:
+        - Watchlist
+      summary: Update watchlist frequency
+      description: Update the refresh frequency for a watchlisted company.
+      operationId: updateWatchlist
+
+      parameters:
+        - $ref: "#/components/parameters/SymbolParam"
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistUpdateRequest"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/WatchlistUpdateSuccess"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Watchlist
+      summary: Remove company from watchlist
+      description: Remove a company from the authenticated user's watchlist.
+      operationId: deleteWatchlist
+
+      parameters:
+        - $ref: "#/components/parameters/SymbolParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/WatchlistDeleteSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /companies/{symbol}/documents:
+    get:
+      tags:
+        - Documents
+      summary: List company documents
+      description: List all documents available for a company.
+      operationId: listDocuments
+
+      parameters:
+        - $ref: "#/components/parameters/SymbolParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/DocumentListSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /documents/{document_id}:
+    get:
+      tags:
+        - Documents
+      summary: Get document metadata
+      description: Retrieve document metadata and processing information.
+      operationId: getDocument
+
+      parameters:
+        - $ref: "#/components/parameters/DocumentIdParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/DocumentSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /documents/{document_id}/download:
+    get:
+      tags:
+        - Documents
+      summary: Download document
+      description: Generate a pre-signed URL to download the document.
+      operationId: downloadDocument
+
+      parameters:
+        - $ref: "#/components/parameters/DocumentIdParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/DownloadDocumentSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /mcp/{symbol}/announcements:
+    get:
+      tags:
+        - MCP
+      summary: Get corporate announcements
+      description: Fetch latest NSE/BSE corporate announcements for a company.
+      operationId: getAnnouncements
+
+      parameters:
+        - $ref: "#/components/parameters/SymbolParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/MCPAnnouncementsSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /mcp/{symbol}/refresh:
+    post:
+      tags:
+        - MCP
+      summary: Refresh company data
+      description: Trigger manual MCP refresh for announcements and documents.
+      operationId: refreshCompany
+
+      parameters:
+        - $ref: "#/components/parameters/SymbolParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/MCPRefreshSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /rag/process/{document_id}:
+    post:
+      tags:
+        - RAG
+      summary: Process document for RAG
+      description: Trigger extraction, chunking, embedding generation, and vector indexing.
+      operationId: processDocument
+
+      parameters:
+        - $ref: "#/components/parameters/DocumentIdParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/RAGProcessSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /rag/status/{document_id}:
+    get:
+      tags:
+        - RAG
+      summary: Get RAG processing status
+      description: Retrieve current processing status of a document.
+      operationId: getProcessingStatus
+
+      parameters:
+        - $ref: "#/components/parameters/DocumentIdParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/RAGStatusSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /chat:
+    post:
+      tags:
+        - Chat
+      summary: Submit chat query
+      description: Ask a financial question using the RAG system.
+      operationId: chat
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/ChatSuccess"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /chat/history:
+    get:
+      tags:
+        - Chat
+      summary: Get chat history
+      description: Retrieve previous chat interactions for the authenticated user.
+      operationId: getChatHistory
+
+      responses:
+        "200":
+          $ref: "#/components/responses/ChatHistorySuccess"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /compare:
+    post:
+      tags:
+        - Compare
+
+      summary: Compare companies
+
+      description: Compare two or more companies using annual reports, filings, and extracted financial insights.
+
+      operationId: compareCompanies
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompareRequest"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/CompareSuccess"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /analyst-reports:
+    post:
+      tags:
+        - Analyst Reports
+
+      summary: Upload analyst report
+
+      description: Upload a broker analyst report PDF for processing.
+
+      operationId: uploadAnalystReport
+
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - company
+                - broker
+                - date
+              properties:
+                file:
+                  type: string
+                  format: binary
+
+                company:
+                  type: string
+
+                broker:
+                  type: string
+
+                date:
+                  type: string
+                  format: date
+
+      responses:
+        "201":
+          $ref: "#/components/responses/AnalystReportUploadSuccess"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /companies/{symbol}/analyst-reports:
+    get:
+      tags:
+        - Analyst Reports
+
+      summary: Get analyst reports
+
+      description: Retrieve analyst reports for a company.
+
+      operationId: getAnalystReports
+
+      parameters:
+        - $ref: "#/components/parameters/SymbolParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/AnalystReportsSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /companies/{symbol}/sentiment:
+    get:
+      tags:
+        - Analyst Reports
+
+      summary: Get company sentiment
+
+      description: Retrieve aggregated analyst sentiment for a company.
+
+      operationId: getCompanySentiment
+
+      parameters:
+        - $ref: "#/components/parameters/SymbolParam"
+
+      responses:
+        "200":
+          $ref: "#/components/responses/CompanySentimentSuccess"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /dashboard:
+    get:
+      tags:
+        - Dashboard
+
+      summary: Get dashboard summary
+
+      description: Retrieve dashboard metrics, watchlist statistics, processing status, and recent updates.
+
+      operationId: getDashboard
+
+      responses:
+        "200":
+          $ref: "#/components/responses/DashboardSuccess"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /scheduler/run:
+    post:
+      tags:
+        - Scheduler
+
+      summary: Run scheduler manually
+
+      description: Trigger scheduler execution manually.
+
+      operationId: runScheduler
+
+      responses:
+        "200":
+          $ref: "#/components/responses/SchedulerRunSuccess"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /scheduler/status:
+    get:
+      tags:
+        - Scheduler
+
+      summary: Get scheduler status
+
+      description: Retrieve current scheduler execution status.
+
+      operationId: getSchedulerStatus
+
+      responses:
+        "200":
+          $ref: "#/components/responses/SchedulerStatusSuccess"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    LoginUser:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        user:
+          $ref: "#/components/schemas/LoginUser"
+
+    ProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+
+    Company:
+      type: object
+      properties:
+        symbol:
+          type: string
+        company_name:
+          type: string
+        sector:
+          type: string
+      required:
+        - symbol
+        - company_name
+
+    CompanyDetails:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        sector:
+          type: string
+        documents:
+          type: integer
+        is_active:
+          type: boolean
+      required:
+        - symbol
+        - name
+
+    WatchlistRequest:
+      type: object
+      properties:
+        symbol:
+          type: string
+          examples:
+            - TCS
+        frequency:
+          type: string
+          enum:
+            - daily
+            - weekly
+      required:
+        - symbol
+        - frequency
+
+    WatchlistUpdateRequest:
+      type: object
+      properties:
+        frequency:
+          type: string
+          enum:
+            - daily
+            - weekly
+      required:
+        - frequency
+
+    Watchlist:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          examples: 
+            - uuid-456
+        symbol:
+          type: string
+          examples: 
+            - TCS
+        frequency:
+          type: string
+          enum:
+            - daily
+            - weekly
+        status:
+          type: string
+          enum:
+            - active
+            - paused
+      required:
+        - id
+        - symbol
+        - frequency
+        - status
+
+    WatchlistItem:
+      type: object
+      properties:
+        symbol:
+          type: string
+          examples: 
+            - TCS
+        company_name:
+          type: string
+          examples: 
+            - Tata Consultancy Services
+        frequency:
+          type: string
+          examples: 
+            - weekly
+        last_update:
+          type: string
+          format: date-time
+          examples: 
+            - "2026-06-01T10:00:00Z"
+        status:
+          type: string
+          examples: 
+            - active
+
+    WatchlistDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          examples: 
+            - TCS removed from watchlist
+
+    Document:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        type:
+          type: string
+          enum:
+            - annual_report
+            - announcement
+            - other
+        report_year:
+          type: string
+        processing_status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+        upload_date:
+          type: string
+          format: date
+
+    DocumentDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_symbol:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        s3_key:
+          type: string
+        processing_status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+
+    DownloadDocumentResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        expires_in:
+          type: integer
+
+    DocumentListResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/Document"
+
+    MCPAnnouncement:
+      type: object
+      properties:
+        title:
+          type: string
+        pdf_url:
+          type: string
+          format: uri
+        date:
+          type: string
+          format: date
+      required:
+        - title
+        - pdf_url
+        - date
+
+    RefreshResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        new_documents_found:
+          type: integer
+        document_ids:
+          type: array
+          items:
+            type: string
+      required:
+        - status
+
+    RAGProcessResponse:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+        message:
+          type: string
+      required:
+        - document_id
+        - status
+        - message
+
+    RAGStatusResponse:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+        chunk_count:
+          type: integer
+        vector_namespace:
+          type: string
+      required:
+        - document_id
+        - status
+
+    ChatRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Natural language question from the user
+      required:
+        - query
+
+    SourceCitation:
+      type: object
+      properties:
+        document:
+          type: string
+        company:
+          type: string
+        page:
+          type: integer
+      required:
+        - document
+        - company
+
+    ChatResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceCitation"
+      required:
+        - answer
+        - sources
+
+    ChatHistoryItem:
+      type: object
+      properties:
+        query:
+          type: string
+        answer:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - query
+        - answer
+        - timestamp
+
+    CompareRequest:
+      type: object
+      properties:
+        companies:
+          type: array
+          minItems: 2
+          items:
+            type: string
+      required:
+        - companies
+
+    CompareSource:
+      type: object
+      properties:
+        company:
+          type: string
+        document:
+          type: string
+      required:
+        - company
+        - document
+
+    CompareResponse:
+      type: object
+      properties:
+        growth_strategy:
+          type: string
+        risks:
+          type: string
+        management_outlook:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompareSource"
+      required:
+        - growth_strategy
+        - risks
+        - management_outlook
+        - sources
+
+    AnalystReportUploadResponse:
+      type: object
+      properties:
+        report_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+      required:
+        - report_id
+        - status
+
+    AnalystReport:
+      type: object
+      properties:
+        report_id:
+          type: string
+          format: uuid
+        broker:
+          type: string
+        date:
+          type: string
+          format: date
+        sentiment_score:
+          type: number
+          format: float
+      required:
+        - report_id
+        - broker
+        - date
+
+    CompanySentiment:
+      type: object
+      properties:
+        symbol:
+          type: string
+        buy:
+          type: integer
+        hold:
+          type: integer
+        sell:
+          type: integer
+        score:
+          type: number
+          format: float
+        reports_count:
+          type: integer
+      required:
+        - symbol
+        - score
+
+    DashboardUpdate:
+      type: object
+      properties:
+        company:
+          type: string
+        event:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - company
+        - event
+        - timestamp
+
+    DashboardResponse:
+      type: object
+      properties:
+        watchlist_count:
+          type: integer
+        new_reports:
+          type: integer
+        pending_processing:
+          type: integer
+        recent_updates:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardUpdate"
+      required:
+        - watchlist_count
+        - new_reports
+        - pending_processing
+        - recent_updates
+
+    SchedulerRunResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        companies_checked:
+          type: integer
+        new_documents:
+          type: integer
+      required:
+        - status
+
+    SchedulerStatus:
+      type: object
+      properties:
+        last_run:
+          type: string
+          format: date-time
+        status:
+          type: string
+        next_run:
+          type: string
+          format: date-time
+      required:
+        - last_run
+        - status
+        - next_run
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    LoginSuccess:
+      description: Login successful
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/LoginResponse"
+
+    ProfileSuccess:
+      description: User profile retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProfileResponse"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: Resource Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    DocumentSuccess:
+      description: Document metadata retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DocumentDetails"
+
+    DocumentListSuccess:
+      description: Documents retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DocumentListResponse'
+
+    DownloadDocumentSuccess:
+      description: Download URL generated successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DownloadDocumentResponse'
+
+    UnprocessableEntity:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    ChatSuccess:
+      description: Chat response generated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ChatResponse"
+
+    ChatHistorySuccess:
+      description: Chat history retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ChatHistoryItem'
+
+    CompareSuccess:
+      description: Company comparison generated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CompareResponse"
+
+    AnalystReportUploadSuccess:
+      description: Analyst report uploaded successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AnalystReportUploadResponse"
+
+    AnalystReportsSuccess:
+      description: Analyst reports retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/AnalystReport"
+
+    CompanySentimentSuccess:
+      description: Company sentiment retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CompanySentiment"
+
+    CompanySearchSuccess:
+      description: Company found successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Company"
+
+    CompanyDetailsSuccess:
+      description: Company details retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CompanyDetails"  
+
+    DashboardSuccess:
+      description: Dashboard data retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DashboardResponse"
+
+    SchedulerRunSuccess:
+      description: Scheduler executed successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SchedulerRunResponse"
+
+    SchedulerStatusSuccess:
+      description: Scheduler status retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SchedulerStatus"
+
+    WatchlistCreateSuccess:
+      description: Watchlist created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Watchlist"
+
+    WatchlistListSuccess:
+      description: Watchlist retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/WatchlistItem"
+
+    WatchlistUpdateSuccess:
+      description: Watchlist updated successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              symbol:
+                type: string
+              frequency:
+                type: string
+              updated:
+                type: boolean
+
+    WatchlistDeleteSuccess:
+      description: Watchlist removed successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WatchlistDeleteResponse"
+
+    MCPAnnouncementsSuccess:
+      description: Corporate announcements retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/MCPAnnouncement"
+
+    MCPRefreshSuccess:
+      description: Company refresh completed successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RefreshResponse"
+
+    RAGProcessSuccess:
+      description: RAG processing started successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RAGProcessResponse"
+
+    RAGStatusSuccess:
+      description: RAG processing status retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RAGStatusResponse"
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  parameters:
+    SymbolParam:
+      name: symbol
+      in: path
+      required: true
+      description: NSE ticker symbol
+      schema:
+        type: string
+      example: TCS
+
+    SearchSymbolQuery:
+      name: symbol
+      in: query
+      required: true
+      description: NSE ticker symbol
+      schema:
+        type: string
+      example: TCS
+
+    DocumentIdParam:
+      name: document_id
+      in: path
+      required: true
+      description: Document identifier
+      schema:
+        type: string
+        format: uuid
