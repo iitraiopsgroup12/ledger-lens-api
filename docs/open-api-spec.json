@@ -1,0 +1,1033 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LedgerLens.ai Platform API",
+    "description": "API for the LedgerLens.ai Platform — monitors NSE-listed companies, ingests annual reports and corporate announcements, processes them through a RAG pipeline, and enables AI-powered chat and comparison over company filings.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Authentication endpoints" },
+    { "name": "Company", "description": "Company search and profile" },
+    { "name": "Watchlist", "description": "User watchlist management" },
+    { "name": "Document", "description": "Company document metadata and download" },
+    { "name": "MCP Service", "description": "NSE MCP tool wrapper endpoints" },
+    { "name": "RAG Processing", "description": "Document ingestion / RAG pipeline" },
+    { "name": "Chat", "description": "AI chat over ingested filings" },
+    { "name": "Comparison", "description": "Structured multi-company comparison" },
+    { "name": "Analyst Report", "description": "Manually uploaded broker analyst reports" },
+    { "name": "Dashboard", "description": "Aggregated dashboard summary" },
+    { "name": "Scheduler", "description": "Watchlist refresh scheduler control" }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Authenticate a user and receive a JWT access token",
+        "description": "Authenticate a user and receive a JWT access token. Token expires in 24 hours. Store securely — required as Bearer token for all subsequent requests.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful authentication",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Fetch the authenticated user's profile",
+        "description": "Fetch the authenticated user's profile. Requires valid Bearer token in Authorization header.",
+        "responses": {
+          "200": {
+            "description": "Authenticated user's profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserProfile" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/companies/search": {
+      "get": {
+        "tags": ["Company"],
+        "summary": "Search for a company by its NSE ticker symbol",
+        "description": "Search for a company by its NSE ticker symbol. Internally calls the NSE MCP tool to validate and enrich metadata. If the symbol is not found in the local DB, the backend performs a live MCP lookup to validate it.",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "description": "NSE ticker symbol, e.g. TCS",
+            "schema": { "type": "string", "example": "TCS" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanySearchResult" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/companies/{symbol}": {
+      "get": {
+        "tags": ["Company"],
+        "summary": "Get full company profile including document count",
+        "description": "Get full company profile including document count. Replace {symbol} with the NSE ticker (e.g. TCS, INFY, RELIANCE).",
+        "parameters": [
+          { "$ref": "#/components/parameters/SymbolPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanyProfile" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/watchlist": {
+      "post": {
+        "tags": ["Watchlist"],
+        "summary": "Add a company to the authenticated user's watchlist",
+        "description": "Add a company to the authenticated user's watchlist with a refresh frequency. Frequency options: 'daily' or 'weekly'. Creates companies record if it does not exist.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WatchlistCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Watchlist entry created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WatchlistEntry" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "get": {
+        "tags": ["Watchlist"],
+        "summary": "Get all watchlist entries for the authenticated user",
+        "description": "Returns array of all watched companies with their refresh metadata.",
+        "responses": {
+          "200": {
+            "description": "List of watchlist entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WatchlistItem" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/watchlist/{symbol}": {
+      "put": {
+        "tags": ["Watchlist"],
+        "summary": "Update the refresh frequency for a watchlisted company",
+        "parameters": [
+          { "$ref": "#/components/parameters/SymbolPathParam" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WatchlistUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Watchlist entry updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WatchlistUpdateResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "tags": ["Watchlist"],
+        "summary": "Remove a company from the authenticated user's watchlist",
+        "description": "Does not delete the company or its documents — only removes the watchlist entry.",
+        "parameters": [
+          { "$ref": "#/components/parameters/SymbolPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Watchlist entry removed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/companies/{symbol}/documents": {
+      "get": {
+        "tags": ["Document"],
+        "summary": "List all documents available for a company",
+        "description": "Returns metadata only. Use /download to get the actual file.",
+        "parameters": [
+          { "$ref": "#/components/parameters/SymbolPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/DocumentSummary" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/documents/{document_id}": {
+      "get": {
+        "tags": ["Document"],
+        "summary": "Get full metadata for a specific document",
+        "parameters": [
+          { "$ref": "#/components/parameters/DocumentIdPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document metadata",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DocumentDetails" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/documents/{document_id}/download": {
+      "get": {
+        "tags": ["Document"],
+        "summary": "Generate a pre-signed S3 URL to download the original PDF",
+        "description": "URL is valid for 1 hour. Do not cache — generate a fresh URL each time.",
+        "parameters": [
+          { "$ref": "#/components/parameters/DocumentIdPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pre-signed download URL",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DownloadResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/mcp/{symbol}/announcements": {
+      "get": {
+        "tags": ["MCP Service"],
+        "summary": "Fetch latest NSE corporate announcements for a symbol",
+        "description": "Internally calls nse_corporate_announcements MCP tool. Live call to NSE MCP — not cached. Use sparingly; prefer scheduler-based refresh for bulk operations.",
+        "parameters": [
+          { "$ref": "#/components/parameters/SymbolPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of announcements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Announcement" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/mcp/{symbol}/refresh": {
+      "post": {
+        "tags": ["MCP Service"],
+        "summary": "Manually trigger a refresh for a company",
+        "description": "Calls MCP, checks for new files, saves metadata, and triggers RAG processing for any new documents. Asynchronous — document processing happens in the background. Poll /rag/status/{document_id} for completion.",
+        "parameters": [
+          { "$ref": "#/components/parameters/SymbolPathParam" }
+        ],
+        "responses": {
+          "202": {
+            "description": "Refresh triggered",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RefreshResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/rag/process/{document_id}": {
+      "post": {
+        "tags": ["RAG Processing"],
+        "summary": "Manually trigger RAG processing for a document",
+        "description": "Extract text → chunk → embed → store in Pinecone. Normally triggered automatically after document ingestion. Use this for manual re-processing or failed documents.",
+        "parameters": [
+          { "$ref": "#/components/parameters/DocumentIdPathParam" }
+        ],
+        "responses": {
+          "202": {
+            "description": "Processing started",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RagProcessResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/rag/status/{document_id}": {
+      "get": {
+        "tags": ["RAG Processing"],
+        "summary": "Check the processing status of a document",
+        "description": "Status values: pending → processing → completed / failed",
+        "parameters": [
+          { "$ref": "#/components/parameters/DocumentIdPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Processing status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RagStatusResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/chat": {
+      "post": {
+        "tags": ["Chat"],
+        "summary": "Submit a natural language query about one or more companies",
+        "description": "LangGraph routes the intent, retrieves relevant document chunks from Pinecone, and Gemini generates a grounded answer. Supports single company queries and cross-company analysis. For multi-company comparison, prefer the /compare endpoint.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChatRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generated answer with source citations",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChatResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/chat/history": {
+      "get": {
+        "tags": ["Chat"],
+        "summary": "Retrieve past chat queries and answers for the authenticated user",
+        "description": "Returns most recent 50 entries by default.",
+        "responses": {
+          "200": {
+            "description": "Chat history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ChatHistoryItem" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/compare": {
+      "post": {
+        "tags": ["Comparison"],
+        "summary": "Generate a structured comparison across two or more companies",
+        "description": "Generate a structured comparison across two or more companies using their ingested annual reports. Both companies must have completed documents in the system. Returns grounded analysis from actual filings.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CompareRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Structured comparison",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompareResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/analyst-reports": {
+      "post": {
+        "tags": ["Analyst Report"],
+        "summary": "Upload a broker analyst report PDF",
+        "description": "Accepts multipart/form-data. File must be a valid PDF. Processing is asynchronous — RAG pipeline runs in background.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": { "$ref": "#/components/schemas/AnalystReportUploadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Report accepted for processing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AnalystReportUploadResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/companies/{symbol}/analyst-reports": {
+      "get": {
+        "tags": ["Analyst Report"],
+        "summary": "List all analyst reports for a company",
+        "parameters": [
+          { "$ref": "#/components/parameters/SymbolPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of analyst reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AnalystReport" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/companies/{symbol}/sentiment": {
+      "get": {
+        "tags": ["Analyst Report"],
+        "summary": "Get aggregated buy/hold/sell sentiment for a company",
+        "description": "Aggregated buy/hold/sell sentiment for a company based on all uploaded analyst reports. Score is a weighted float from 0 (strong sell) to 1 (strong buy).",
+        "parameters": [
+          { "$ref": "#/components/parameters/SymbolPathParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated sentiment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompanySentiment" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get a summary of the user's watchlist activity, new reports, and processing queue",
+        "description": "Single call to populate the main dashboard view.",
+        "responses": {
+          "200": {
+            "description": "Dashboard summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DashboardResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/scheduler/run": {
+      "post": {
+        "tags": ["Scheduler"],
+        "summary": "Manually trigger a full scheduler run",
+        "description": "Same logic as the hourly cron. Useful for testing and admin operations. Admin-only endpoint. Runs synchronously — may be slow for large watchlists.",
+        "responses": {
+          "200": {
+            "description": "Scheduler run result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SchedulerRunResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/scheduler/status": {
+      "get": {
+        "tags": ["Scheduler"],
+        "summary": "Check when the scheduler last ran and its current status",
+        "responses": {
+          "200": {
+            "description": "Scheduler status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SchedulerStatus" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "SymbolPathParam": {
+        "name": "symbol",
+        "in": "path",
+        "required": true,
+        "description": "NSE ticker symbol, e.g. TCS, INFY, RELIANCE",
+        "schema": { "type": "string", "example": "TCS" }
+      },
+      "DocumentIdPathParam": {
+        "name": "document_id",
+        "in": "path",
+        "required": true,
+        "description": "Document UUID",
+        "schema": { "type": "string", "format": "uuid" }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Missing required fields or invalid input",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or expired JWT token",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Valid token but insufficient role",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Symbol, document_id, or watchlist entry not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Company already in watchlist",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "UnprocessableEntity": {
+        "description": "Document processing failed",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Unexpected backend error — logged and a generic message returned",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        },
+        "required": ["error"]
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "TCS removed from watchlist" }
+        },
+        "required": ["message"]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "user@company.com" },
+          "password": { "type": "string", "format": "password", "example": "******" }
+        },
+        "required": ["email", "password"]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIs..." },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "example": "uuid-123" },
+              "name": { "type": "string", "example": "John Doe" }
+            }
+          }
+        },
+        "required": ["access_token", "user"]
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "uuid-123" },
+          "email": { "type": "string", "format": "email", "example": "user@company.com" },
+          "role": { "type": "string", "enum": ["analyst", "admin"], "example": "analyst" }
+        },
+        "required": ["id", "email", "role"]
+      },
+      "CompanySearchResult": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string", "example": "TCS" },
+          "company_name": { "type": "string", "example": "Tata Consultancy Services" },
+          "sector": { "type": "string", "example": "IT" }
+        },
+        "required": ["symbol", "company_name"]
+      },
+      "CompanyProfile": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string", "example": "TCS" },
+          "name": { "type": "string", "example": "Tata Consultancy Services" },
+          "sector": { "type": "string", "example": "IT" },
+          "documents": { "type": "integer", "example": 12 },
+          "is_active": { "type": "boolean", "example": true }
+        },
+        "required": ["symbol", "name"]
+      },
+      "WatchlistCreateRequest": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string", "example": "TCS" },
+          "frequency": { "type": "string", "enum": ["daily", "weekly"], "example": "weekly" }
+        },
+        "required": ["symbol", "frequency"]
+      },
+      "WatchlistEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "uuid-456" },
+          "symbol": { "type": "string", "example": "TCS" },
+          "frequency": { "type": "string", "enum": ["daily", "weekly"], "example": "weekly" },
+          "status": { "type": "string", "enum": ["active", "paused"], "example": "active" }
+        },
+        "required": ["id", "symbol", "frequency", "status"]
+      },
+      "WatchlistItem": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string", "example": "TCS" },
+          "company_name": { "type": "string", "example": "Tata Consultancy Services" },
+          "frequency": { "type": "string", "enum": ["daily", "weekly"], "example": "weekly" },
+          "last_update": { "type": "string", "format": "date-time", "example": "2026-06-01T10:00:00Z" },
+          "status": { "type": "string", "enum": ["active", "paused"], "example": "active" }
+        },
+        "required": ["symbol", "company_name", "frequency", "status"]
+      },
+      "WatchlistUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "frequency": { "type": "string", "enum": ["daily", "weekly"], "example": "daily" }
+        },
+        "required": ["frequency"]
+      },
+      "WatchlistUpdateResponse": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string", "example": "TCS" },
+          "frequency": { "type": "string", "enum": ["daily", "weekly"], "example": "daily" },
+          "updated": { "type": "boolean", "example": true }
+        },
+        "required": ["symbol", "frequency", "updated"]
+      },
+      "DocumentSummary": {
+        "type": "object",
+        "properties": {
+          "document_id": { "type": "string", "format": "uuid", "example": "uuid-789" },
+          "title": { "type": "string", "example": "Annual Report FY25" },
+          "type": { "type": "string", "enum": ["annual_report", "announcement", "other"], "example": "annual_report" },
+          "report_year": { "type": "string", "example": "FY25" },
+          "processing_status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"], "example": "completed" },
+          "upload_date": { "type": "string", "format": "date", "example": "2026-05-10" }
+        },
+        "required": ["document_id", "title", "type", "processing_status"]
+      },
+      "DocumentDetails": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "uuid-789" },
+          "company_symbol": { "type": "string", "example": "TCS" },
+          "title": { "type": "string", "example": "Annual Report FY25" },
+          "type": { "type": "string", "enum": ["annual_report", "announcement", "other"], "example": "annual_report" },
+          "s3_key": { "type": "string", "example": "tcs/fy25/annual_report.pdf" },
+          "processing_status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"], "example": "completed" }
+        },
+        "required": ["id", "company_symbol", "title", "type", "processing_status"]
+      },
+      "DownloadResponse": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri", "example": "https://s3.amazonaws.com/bucket/tcs/fy25/..." },
+          "expires_in": { "type": "integer", "example": 3600 }
+        },
+        "required": ["url", "expires_in"]
+      },
+      "Announcement": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "example": "Annual Report FY25" },
+          "pdf_url": { "type": "string", "format": "uri", "example": "https://..." },
+          "date": { "type": "string", "format": "date", "example": "2026-05-15" }
+        },
+        "required": ["title", "pdf_url", "date"]
+      },
+      "RefreshResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "processing" },
+          "new_documents_found": { "type": "integer", "example": 1 },
+          "document_ids": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" },
+            "example": ["uuid-890"]
+          }
+        },
+        "required": ["status", "new_documents_found", "document_ids"]
+      },
+      "RagProcessResponse": {
+        "type": "object",
+        "properties": {
+          "document_id": { "type": "string", "format": "uuid", "example": "uuid-789" },
+          "status": { "type": "string", "example": "processing" },
+          "message": { "type": "string", "example": "Pipeline started" }
+        },
+        "required": ["document_id", "status"]
+      },
+      "RagStatusResponse": {
+        "type": "object",
+        "properties": {
+          "document_id": { "type": "string", "format": "uuid", "example": "uuid-789" },
+          "status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"], "example": "completed" },
+          "chunk_count": { "type": "integer", "example": 142 },
+          "pinecone_namespace": { "type": "string", "example": "TCS" }
+        },
+        "required": ["document_id", "status"]
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "example": "What is TCS's revenue growth strategy for FY25?" }
+        },
+        "required": ["query"]
+      },
+      "SourceCitation": {
+        "type": "object",
+        "properties": {
+          "document": { "type": "string", "example": "Annual Report FY25" },
+          "company": { "type": "string", "example": "TCS" },
+          "page": { "type": "integer", "example": 12 }
+        },
+        "required": ["document", "company"]
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "answer": { "type": "string", "example": "TCS's FY25 annual report highlights..." },
+          "sources": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SourceCitation" }
+          }
+        },
+        "required": ["answer", "sources"]
+      },
+      "ChatHistoryItem": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "example": "TCS growth strategy" },
+          "answer": { "type": "string", "example": "..." },
+          "timestamp": { "type": "string", "format": "date-time", "example": "2026-06-01T09:30:00Z" }
+        },
+        "required": ["query", "answer", "timestamp"]
+      },
+      "CompareRequest": {
+        "type": "object",
+        "properties": {
+          "companies": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "example": ["TCS", "Infosys"]
+          }
+        },
+        "required": ["companies"]
+      },
+      "CompareSource": {
+        "type": "object",
+        "properties": {
+          "company": { "type": "string", "example": "TCS" },
+          "document": { "type": "string", "example": "Annual Report FY25" }
+        },
+        "required": ["company", "document"]
+      },
+      "CompareResponse": {
+        "type": "object",
+        "properties": {
+          "growth_strategy": { "type": "string", "example": "TCS focuses on... while Infosys..." },
+          "risks": { "type": "string", "example": "TCS faces... Infosys highlights..." },
+          "management_outlook": { "type": "string", "example": "Both managements expressed..." },
+          "sources": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CompareSource" }
+          }
+        },
+        "required": ["growth_strategy", "risks", "management_outlook", "sources"]
+      },
+      "AnalystReportUploadRequest": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string", "format": "binary", "description": "PDF file" },
+          "company": { "type": "string", "example": "TCS" },
+          "broker": { "type": "string", "example": "Goldman Sachs" },
+          "date": { "type": "string", "format": "date", "example": "2026-05-20" }
+        },
+        "required": ["file", "company", "broker", "date"]
+      },
+      "AnalystReportUploadResponse": {
+        "type": "object",
+        "properties": {
+          "report_id": { "type": "string", "format": "uuid", "example": "uuid-999" },
+          "status": { "type": "string", "example": "processing" }
+        },
+        "required": ["report_id", "status"]
+      },
+      "AnalystReport": {
+        "type": "object",
+        "properties": {
+          "report_id": { "type": "string", "format": "uuid", "example": "uuid-999" },
+          "broker": { "type": "string", "example": "Goldman Sachs" },
+          "date": { "type": "string", "format": "date", "example": "2026-05-20" },
+          "sentiment_score": { "type": "number", "format": "float", "minimum": 0, "maximum": 1, "example": 0.85 }
+        },
+        "required": ["report_id", "broker", "date"]
+      },
+      "CompanySentiment": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string", "example": "TCS" },
+          "buy": { "type": "integer", "example": 10 },
+          "hold": { "type": "integer", "example": 2 },
+          "sell": { "type": "integer", "example": 1 },
+          "score": { "type": "number", "format": "float", "minimum": 0, "maximum": 1, "example": 0.82 },
+          "reports_count": { "type": "integer", "example": 13 }
+        },
+        "required": ["symbol", "buy", "hold", "sell", "score", "reports_count"]
+      },
+      "DashboardUpdate": {
+        "type": "object",
+        "properties": {
+          "company": { "type": "string", "example": "TCS" },
+          "event": { "type": "string", "example": "Annual Report FY25 processed" },
+          "timestamp": { "type": "string", "format": "date-time", "example": "2026-06-01T08:00:00Z" }
+        },
+        "required": ["company", "event", "timestamp"]
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "properties": {
+          "watchlist_count": { "type": "integer", "example": 25 },
+          "new_reports": { "type": "integer", "example": 4 },
+          "pending_processing": { "type": "integer", "example": 2 },
+          "recent_updates": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DashboardUpdate" }
+          }
+        },
+        "required": ["watchlist_count", "new_reports", "pending_processing", "recent_updates"]
+      },
+      "SchedulerRunResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "triggered" },
+          "companies_checked": { "type": "integer", "example": 12 },
+          "new_documents": { "type": "integer", "example": 1 }
+        },
+        "required": ["status", "companies_checked", "new_documents"]
+      },
+      "SchedulerStatus": {
+        "type": "object",
+        "properties": {
+          "last_run": { "type": "string", "format": "date-time", "example": "2026-06-06T05:00:00Z" },
+          "status": { "type": "string", "enum": ["idle", "running"], "example": "idle" },
+          "next_run": { "type": "string", "format": "date-time", "example": "2026-06-06T06:00:00Z" }
+        },
+        "required": ["last_run", "status", "next_run"]
+      }
+    }
+  }
+}
