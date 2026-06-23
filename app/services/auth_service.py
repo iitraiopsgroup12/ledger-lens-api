@@ -1,13 +1,14 @@
 """Auth module business logic.
 
-Per docs/API_Documentation.docx section 5.4: JWT tokens should embed
-user_id, role, and exp (24h). Real implementations must verify
-signature/expiry (e.g. via python-jose) and hash passwords (e.g. via
-passlib/bcrypt) against the ``users`` table in Postgres.
+This proxy holds no user store of its own: credentials and roles live in
+ledger-lens-sync's `/users` resource (see docs/servers/ledger-lens-sync.json).
+`AuthService` only resolves *who* a caller is and forwards their bearer
+token on to the backends it fronts.
 """
 
 from abc import ABC, abstractmethod
 
+from app.clients.sync_client import SyncServiceClient
 from app.schemas.auth import LoginResponse, UserProfile
 from app.services.exceptions import NotFoundError
 
@@ -20,31 +21,33 @@ class AuthService(ABC):
     def get_profile(self, user_id: str) -> UserProfile: ...
 
 
-class InMemoryAuthService(AuthService):
-    """Placeholder implementation. TODO: replace with Postgres-backed auth + real JWT issuance."""
+class SyncAuthService(AuthService):
+    """Resolves users against ledger-lens-sync; issues no real JWT yet.
 
-    def __init__(self) -> None:
-        self._users: dict[str, dict] = {
-            "user@company.com": {
-                "id": "uuid-123",
-                "name": "John Doe",
-                "role": "analyst",
-                "password": "******",
-            }
-        }
+    TODO: ledger-lens-sync's `/users` resource has no password-verification
+    endpoint, so login cannot validate a password remotely yet. Once sync
+    exposes a credentials-check endpoint, wire it in here instead of the
+    email-lookup placeholder below.
+    """
+
+    def __init__(self, sync_client: SyncServiceClient) -> None:
+        self._sync_client = sync_client
 
     def login(self, email: str, password: str) -> LoginResponse:
-        user = self._users.get(email)
-        if user is None or user["password"] != password:
+        users = self._sync_client.list_users(limit=500)
+        user = next((u for u in users if u["email"] == email), None)
+        if user is None:
             raise NotFoundError(f"No user found for email '{email}'")
-        # TODO: sign a real JWT containing user_id, role, exp (24h).
+        # TODO: sign a real JWT containing user_id, role, exp (24h); for now the
+        # caller's user_id doubles as the bearer token (see deps.get_current_user).
         return LoginResponse(
-            access_token="eyJhbGciOiJIUzI1NiIs...",
-            user={"id": user["id"], "name": user["name"]},
+            access_token=str(user["id"]),
+            user={"id": str(user["id"]), "name": user.get("full_name") or user["email"]},
         )
 
     def get_profile(self, user_id: str) -> UserProfile:
-        for email, user in self._users.items():
-            if user["id"] == user_id:
-                return UserProfile(id=user["id"], email=email, role=user["role"])
-        raise NotFoundError(f"No user found for id '{user_id}'")
+        try:
+            user = self._sync_client.get_user(int(user_id), token=user_id)
+        except (ValueError, NotFoundError) as exc:
+            raise NotFoundError(f"No user found for id '{user_id}'") from exc
+        return UserProfile(id=str(user["id"]), email=user["email"], role=user["role"])

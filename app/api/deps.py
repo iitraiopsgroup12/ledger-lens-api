@@ -11,16 +11,17 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.clients.rag_client import RagServiceClient
+from app.clients.sync_client import SyncServiceClient
+from app.core.config import get_settings
 from app.schemas.auth import UserProfile
 from app.services.analyst_report_service import AnalystReportService, InMemoryAnalystReportService
-from app.services.auth_service import AuthService, InMemoryAuthService
+from app.services.auth_service import AuthService, SyncAuthService
 from app.services.chat_service import ChatService, InMemoryChatService
 from app.services.company_service import CompanyService, InMemoryCompanyService
 from app.services.compare_service import CompareService, InMemoryCompareService
 from app.services.dashboard_service import DashboardService, InMemoryDashboardService
 from app.services.document_service import DocumentService, InMemoryDocumentService
-from app.services.mcp_service import InMemoryMcpService, McpService
-from app.services.rag_service import InMemoryRagService, RagService
 from app.services.scheduler_service import InMemorySchedulerService, SchedulerService
 from app.services.watchlist_service import InMemoryWatchlistService, WatchlistService
 
@@ -28,8 +29,20 @@ _bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @lru_cache
+def get_sync_client() -> SyncServiceClient:
+    settings = get_settings()
+    return SyncServiceClient(settings.sync_service_url, settings.request_timeout_seconds)
+
+
+@lru_cache
+def get_rag_client() -> RagServiceClient:
+    settings = get_settings()
+    return RagServiceClient(settings.rag_service_url, settings.request_timeout_seconds)
+
+
+@lru_cache
 def get_auth_service() -> AuthService:
-    return InMemoryAuthService()
+    return SyncAuthService(get_sync_client())
 
 
 @lru_cache
@@ -45,16 +58,6 @@ def get_watchlist_service() -> WatchlistService:
 @lru_cache
 def get_document_service() -> DocumentService:
     return InMemoryDocumentService()
-
-
-@lru_cache
-def get_mcp_service() -> McpService:
-    return InMemoryMcpService()
-
-
-@lru_cache
-def get_rag_service() -> RagService:
-    return InMemoryRagService()
 
 
 @lru_cache
