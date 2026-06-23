@@ -19,9 +19,9 @@ from app.services.analyst_report_service import AnalystReportService, InMemoryAn
 from app.services.auth_service import AuthService, SyncAuthService
 from app.services.chat_service import ChatService, InMemoryChatService
 from app.services.company_service import CompanyService, InMemoryCompanyService
-from app.services.compare_service import CompareService, InMemoryCompareService
 from app.services.dashboard_service import DashboardService, InMemoryDashboardService
 from app.services.document_service import DocumentService, InMemoryDocumentService
+from app.services.onboard_service import OnboardService, SyncOnboardService
 from app.services.scheduler_service import InMemorySchedulerService, SchedulerService
 from app.services.watchlist_service import InMemoryWatchlistService, WatchlistService
 
@@ -66,11 +66,6 @@ def get_chat_service() -> ChatService:
 
 
 @lru_cache
-def get_compare_service() -> CompareService:
-    return InMemoryCompareService()
-
-
-@lru_cache
 def get_analyst_report_service() -> AnalystReportService:
     return InMemoryAnalystReportService()
 
@@ -83,6 +78,11 @@ def get_dashboard_service() -> DashboardService:
 @lru_cache
 def get_scheduler_service() -> SchedulerService:
     return InMemorySchedulerService()
+
+
+@lru_cache
+def get_onboard_service() -> OnboardService:
+    return SyncOnboardService(get_sync_client())
 
 
 def get_current_user(

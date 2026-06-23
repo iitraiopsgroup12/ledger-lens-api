@@ -18,7 +18,7 @@ There is no test suite or linter config configured yet.
 Clean architecture: routers (transport) are decoupled from services (business logic) via constructor-free DI in `app/api/deps.py`.
 
 - `app/main.py` — app init, mounts `api_router` under `/api/v1`, and a global `ServiceError` → HTTP status exception handler (`NotFoundError`→404, `ConflictError`→409, `ProcessingError`→422, anything else→500). Routers should let `ServiceError` subclasses propagate rather than catching them locally.
-- `app/api/v1/` — one router module per resource (auth, companies, watchlist, documents, mcp, rag, chat, compare, analyst_reports, dashboard, scheduler), aggregated in `app/api/v1/__init__.py`.
+- `app/api/v1/` — one router module per resource (auth, companies, watchlist, documents, chat, analyst_reports, dashboard, scheduler), aggregated in `app/api/v1/__init__.py`.
 - `app/api/deps.py` — `lru_cache`-memoized singleton providers (`get_*_service`) that return the abstract service interface type, plus `get_current_user`/`require_admin` auth dependencies.
 - `app/schemas/` — Pydantic models, one module per resource, mirroring the `components.schemas` in `docs/open-api-spec.json`.
 - `app/services/` — one `<X>Service(ABC)` interface + one `InMemory<X>Service` placeholder implementation per module. The in-memory implementations hold dummy/seed data only; swap them for real Postgres/S3/Pinecone/Gemini/MCP-backed classes as those integrations are built. `app/services/exceptions.py` defines the `ServiceError` hierarchy used for HTTP error mapping.

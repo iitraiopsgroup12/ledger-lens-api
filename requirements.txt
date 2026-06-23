@@ -47,7 +47,9 @@ pydantic==2.13.4
 pydantic-core==2.46.4
     # via pydantic
 python-dotenv==1.2.2
-    # via uvicorn
+    # via
+    #   ledger-lens-api
+    #   uvicorn
 python-multipart==0.0.32
     # via ledger-lens-api
 pyyaml==6.0.3

@@ -20,10 +20,10 @@
     { "name": "Company", "description": "Company search and profile" },
     { "name": "Watchlist", "description": "User watchlist management" },
     { "name": "Document", "description": "Company document metadata and download" },
+    { "name": "Onboard", "description": "Kick off onboarding/sync for a company" },
     { "name": "MCP Service", "description": "NSE MCP tool wrapper endpoints" },
     { "name": "RAG Processing", "description": "Document ingestion / RAG pipeline" },
     { "name": "Chat", "description": "AI chat over ingested filings" },
-    { "name": "Comparison", "description": "Structured multi-company comparison" },
     { "name": "Analyst Report", "description": "Manually uploaded broker analyst reports" },
     { "name": "Dashboard", "description": "Aggregated dashboard summary" },
     { "name": "Scheduler", "description": "Watchlist refresh scheduler control" }
@@ -302,6 +302,34 @@
         }
       }
     },
+    "/onboard": {
+      "get": {
+        "tags": ["Onboard"],
+        "summary": "Start onboarding a company",
+        "description": "Forwards to ledger-lens-sync's GET /onboard asynchronously (fire-and-forget) and immediately acknowledges; the resulting filings/sync status surface in the Watchlist once the backend finishes.",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "TCS"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Onboarding started",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
     "/mcp/{symbol}/announcements": {
       "get": {
         "tags": ["MCP Service"],
@@ -402,7 +430,7 @@
       "post": {
         "tags": ["Chat"],
         "summary": "Submit a natural language query about one or more companies",
-        "description": "LangGraph routes the intent, retrieves relevant document chunks from Pinecone, and Gemini generates a grounded answer. Supports single company queries and cross-company analysis. For multi-company comparison, prefer the /compare endpoint.",
+        "description": "LangGraph routes the intent, retrieves relevant document chunks from Pinecone, and Gemini generates a grounded answer. Supports single company queries and cross-company analysis.",
         "requestBody": {
           "required": true,
           "content": {
@@ -444,35 +472,6 @@
             }
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
-          "500": { "$ref": "#/components/responses/InternalServerError" }
-        }
-      }
-    },
-    "/compare": {
-      "post": {
-        "tags": ["Comparison"],
-        "summary": "Generate a structured comparison across two or more companies",
-        "description": "Generate a structured comparison across two or more companies using their ingested annual reports. Both companies must have completed documents in the system. Returns grounded analysis from actual filings.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/CompareRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Structured comparison",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/CompareResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "404": { "$ref": "#/components/responses/NotFound" },
           "500": { "$ref": "#/components/responses/InternalServerError" }
         }
       }
@@ -914,39 +913,6 @@
           "timestamp": { "type": "string", "format": "date-time", "example": "2026-06-01T09:30:00Z" }
         },
         "required": ["query", "answer", "timestamp"]
-      },
-      "CompareRequest": {
-        "type": "object",
-        "properties": {
-          "companies": {
-            "type": "array",
-            "items": { "type": "string" },
-            "minItems": 2,
-            "example": ["TCS", "Infosys"]
-          }
-        },
-        "required": ["companies"]
-      },
-      "CompareSource": {
-        "type": "object",
-        "properties": {
-          "company": { "type": "string", "example": "TCS" },
-          "document": { "type": "string", "example": "Annual Report FY25" }
-        },
-        "required": ["company", "document"]
-      },
-      "CompareResponse": {
-        "type": "object",
-        "properties": {
-          "growth_strategy": { "type": "string", "example": "TCS focuses on... while Infosys..." },
-          "risks": { "type": "string", "example": "TCS faces... Infosys highlights..." },
-          "management_outlook": { "type": "string", "example": "Both managements expressed..." },
-          "sources": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/CompareSource" }
-          }
-        },
-        "required": ["growth_strategy", "risks", "management_outlook", "sources"]
       },
       "AnalystReportUploadRequest": {
         "type": "object",

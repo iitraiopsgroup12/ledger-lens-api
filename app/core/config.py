@@ -1,12 +1,16 @@
 """Backend service locations.
 
 This API is a thin auth/authorization proxy in front of two in-cluster
-backends reachable by their Kubernetes Service DNS names. Override via env
-vars for local development (e.g. port-forwarded URLs).
+backends reachable by their Kubernetes Service DNS names. Override via the
+.env file (see .env.example) for local development (e.g. port-forwarded URLs).
 """
 
 import os
 from dataclasses import dataclass
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 @dataclass(frozen=True)
