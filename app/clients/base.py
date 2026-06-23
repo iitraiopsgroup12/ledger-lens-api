@@ -1,8 +1,7 @@
 """Shared HTTP plumbing for backend service clients.
 
-Every call to ledger-lens-sync / ledger-lens-rag is made on behalf of an
-authenticated caller, so the bearer token presented to this proxy is
-forwarded as the `Authorization` header on the outgoing request.
+The ledger-lens-sync / ledger-lens-rag services expose no auth scheme in
+their specs, so requests are made without an Authorization header.
 """
 
 import httpx
@@ -24,15 +23,10 @@ class BaseServiceClient:
         self,
         method: str,
         path: str,
-        *,
-        token: str | None = None,
         **kwargs,
     ) -> httpx.Response:
-        headers = kwargs.pop("headers", {}) or {}
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
         try:
-            response = self._client.request(method, path, headers=headers, **kwargs)
+            response = self._client.request(method, path, **kwargs)
         except httpx.RequestError as exc:
             raise ProcessingError(f"Upstream request to {self._client.base_url}{path} failed: {exc}") from exc
         if response.status_code >= 400:

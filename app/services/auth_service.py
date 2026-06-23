@@ -2,8 +2,7 @@
 
 This proxy holds no user store of its own: credentials and roles live in
 ledger-lens-sync's `/users` resource (see docs/servers/ledger-lens-sync.json).
-`AuthService` only resolves *who* a caller is and forwards their bearer
-token on to the backends it fronts.
+`AuthService` only resolves *who* a caller is.
 """
 
 from abc import ABC, abstractmethod
@@ -47,7 +46,7 @@ class SyncAuthService(AuthService):
 
     def get_profile(self, user_id: str) -> UserProfile:
         try:
-            user = self._sync_client.get_user(int(user_id), token=user_id)
+            user = self._sync_client.get_user(int(user_id))
         except (ValueError, NotFoundError) as exc:
             raise NotFoundError(f"No user found for id '{user_id}'") from exc
         return UserProfile(id=str(user["id"]), email=user["email"], role=user["role"])

@@ -15,15 +15,15 @@ logger = logging.getLogger(__name__)
 
 class OnboardService(ABC):
     @abstractmethod
-    def start_onboarding(self, symbol: str, user_id: int, token: str) -> None: ...
+    def start_onboarding(self, symbol: str, user_id: int) -> None: ...
 
 
 class SyncOnboardService(OnboardService):
     def __init__(self, sync_client: SyncServiceClient) -> None:
         self._sync_client = sync_client
 
-    def start_onboarding(self, symbol: str, user_id: int, token: str) -> None:
+    def start_onboarding(self, symbol: str, user_id: int) -> None:
         try:
-            self._sync_client.onboard_company(symbol, user_id, token=token)
+            self._sync_client.onboard_company(symbol, user_id)
         except Exception:
             logger.exception("Onboarding failed for symbol=%s user_id=%s", symbol, user_id)

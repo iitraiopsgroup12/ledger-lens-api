@@ -17,7 +17,7 @@ def onboard_company(
     current_user: Annotated[UserProfile, Depends(get_current_user)],
     onboard_service: Annotated[OnboardService, Depends(get_onboard_service)],
 ) -> MessageResponse:
-    background_tasks.add_task(onboard_service.start_onboarding, symbol, int(current_user.id), current_user.id)
+    background_tasks.add_task(onboard_service.start_onboarding, symbol, int(current_user.id))
     return MessageResponse(
         message="The Selected Company has been started onboard ! Please check in Watchlist after sometime!"
     )

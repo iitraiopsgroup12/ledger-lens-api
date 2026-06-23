@@ -8,19 +8,19 @@ JsonObject = dict[str, Any]
 
 
 class RagServiceClient(BaseServiceClient):
-    def ingest(self, payload: JsonObject, *, token: str | None = None) -> JsonObject:
-        return self.request("POST", "/api/v1/ingest", json=payload, token=token).json()
+    def ingest(self, payload: JsonObject) -> JsonObject:
+        return self.request("POST", "/api/v1/ingest", json=payload).json()
 
-    def ingest_file(self, files: list[tuple[str, bytes, str]], *, token: str | None = None) -> JsonObject:
+    def ingest_file(self, files: list[tuple[str, bytes, str]]) -> JsonObject:
         upload = [("files", file) for file in files]
-        return self.request("POST", "/api/v1/ingest/file", files=upload, token=token).json()
+        return self.request("POST", "/api/v1/ingest/file", files=upload).json()
 
-    def query(self, payload: JsonObject, *, token: str | None = None) -> JsonObject:
-        return self.request("POST", "/api/v1/query", json=payload, token=token).json()
+    def query(self, payload: JsonObject) -> JsonObject:
+        return self.request("POST", "/api/v1/query", json=payload).json()
 
-    def query_with_file(self, data: JsonObject, file: tuple[str, bytes, str], *, token: str | None = None) -> JsonObject:
+    def query_with_file(self, data: JsonObject, file: tuple[str, bytes, str]) -> JsonObject:
         return self.request(
-            "POST", "/api/v1/query-with-file", data=data, files={"file": file}, token=token
+            "POST", "/api/v1/query-with-file", data=data, files={"file": file}
         ).json()
 
     def health(self) -> JsonObject:
