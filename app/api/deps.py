@@ -23,7 +23,7 @@ from app.services.dashboard_service import DashboardService, InMemoryDashboardSe
 from app.services.document_service import DocumentService, InMemoryDocumentService
 from app.services.onboard_service import OnboardService, SyncOnboardService
 from app.services.scheduler_service import InMemorySchedulerService, SchedulerService
-from app.services.watchlist_service import InMemoryWatchlistService, WatchlistService
+from app.services.watchlist_service import SyncWatchlistService, WatchlistService
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -52,7 +52,7 @@ def get_company_service() -> CompanyService:
 
 @lru_cache
 def get_watchlist_service() -> WatchlistService:
-    return InMemoryWatchlistService()
+    return SyncWatchlistService(get_sync_client())
 
 
 @lru_cache
