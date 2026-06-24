@@ -8,7 +8,7 @@ A hand-written (not openapi-generator-produced) FastAPI implementation, built fr
 
 ```bash
 uv sync                                   # install deps into .venv
-uv run uvicorn app.main:app --reload      # run the API; docs at /docs
+uv run uvicorn app.main:app --reload --port 8001   # run the API; docs at /docs (http://127.0.0.1:8001/docs)
 ```
 
 There is no test suite or linter config configured yet.

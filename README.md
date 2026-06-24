@@ -13,10 +13,10 @@ uv sync
 ## Run
 
 ```bash
-uv run uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload --port 8001
 ```
 
-API docs: http://127.0.0.1:8000/docs
+API docs: http://127.0.0.1:8001/docs
 
 ## Architecture
 
