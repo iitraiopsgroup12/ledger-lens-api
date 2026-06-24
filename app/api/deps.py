@@ -17,7 +17,7 @@ from app.core.config import get_settings
 from app.schemas.auth import UserProfile
 from app.services.analyst_report_service import AnalystReportService, InMemoryAnalystReportService
 from app.services.auth_service import AuthService, SyncAuthService
-from app.services.chat_service import ChatService, InMemoryChatService
+from app.services.chat_service import ChatService, RagChatService
 from app.services.company_service import CompanyService, InMemoryCompanyService
 from app.services.dashboard_service import DashboardService, InMemoryDashboardService
 from app.services.document_service import DocumentService, InMemoryDocumentService
@@ -62,7 +62,7 @@ def get_document_service() -> DocumentService:
 
 @lru_cache
 def get_chat_service() -> ChatService:
-    return InMemoryChatService()
+    return RagChatService(get_rag_client())
 
 
 @lru_cache
