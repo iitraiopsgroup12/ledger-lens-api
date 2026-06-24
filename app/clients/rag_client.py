@@ -11,9 +11,12 @@ class RagServiceClient(BaseServiceClient):
     def ingest(self, payload: JsonObject) -> JsonObject:
         return self.request("POST", "/api/v1/ingest", json=payload).json()
 
-    def ingest_file(self, files: list[tuple[str, bytes, str]]) -> JsonObject:
+    def ingest_file(
+        self, files: list[tuple[str, bytes, str]], metadata: str | None = None
+    ) -> JsonObject:
         upload = [("files", file) for file in files]
-        return self.request("POST", "/api/v1/ingest/file", files=upload).json()
+        data = {"metadata": metadata} if metadata is not None else None
+        return self.request("POST", "/api/v1/ingest/file", data=data, files=upload).json()
 
     def query(self, payload: JsonObject) -> JsonObject:
         return self.request("POST", "/api/v1/query", json=payload).json()
