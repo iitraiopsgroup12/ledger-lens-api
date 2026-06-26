@@ -4,7 +4,13 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
-from app.services.exceptions import ConflictError, NotFoundError, ProcessingError, ServiceError
+from app.services.exceptions import (
+    AuthenticationError,
+    ConflictError,
+    NotFoundError,
+    ProcessingError,
+    ServiceError,
+)
 
 app = FastAPI(
     title="LedgerLens.ai Platform API",
@@ -17,6 +23,7 @@ app = FastAPI(
 )
 
 _STATUS_BY_ERROR: dict[type[ServiceError], int] = {
+    AuthenticationError: 401,
     NotFoundError: 404,
     ConflictError: 409,
     ProcessingError: 422,

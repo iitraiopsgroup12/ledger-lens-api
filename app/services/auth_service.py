@@ -2,14 +2,16 @@
 
 This proxy holds no user store of its own: credentials and roles live in
 ledger-lens-sync's `/users` resource (see docs/servers/ledger-lens-sync.json).
-`AuthService` only resolves *who* a caller is.
+`AuthService` verifies credentials against that store and mints the JWT that
+identifies the caller on every subsequent request.
 """
 
 from abc import ABC, abstractmethod
 
 from app.clients.sync_client import SyncServiceClient
+from app.core.security import create_access_token, verify_password
 from app.schemas.auth import LoginResponse, UserProfile
-from app.services.exceptions import NotFoundError
+from app.services.exceptions import AuthenticationError, NotFoundError
 
 
 class AuthService(ABC):
@@ -21,27 +23,34 @@ class AuthService(ABC):
 
 
 class SyncAuthService(AuthService):
-    """Resolves users against ledger-lens-sync; issues no real JWT yet.
+    """Authenticates users against ledger-lens-sync and issues a JWT.
 
-    TODO: ledger-lens-sync's `/users` resource has no password-verification
-    endpoint, so login cannot validate a password remotely yet. Once sync
-    exposes a credentials-check endpoint, wire it in here instead of the
-    email-lookup placeholder below.
+    Login looks the user up by email via `GET /users/email/{email_address}`,
+    which returns the stored bcrypt `password_hash`, verifies the supplied
+    password against it, and signs a 24h JWT embedding the user's identity.
     """
 
     def __init__(self, sync_client: SyncServiceClient) -> None:
         self._sync_client = sync_client
 
     def login(self, email: str, password: str) -> LoginResponse:
-        users = self._sync_client.list_users(limit=500)
-        user = next((u for u in users if u["email"] == email), None)
-        if user is None:
-            raise NotFoundError(f"No user found for email '{email}'")
-        # TODO: sign a real JWT containing user_id, role, exp (24h); for now the
-        # caller's user_id doubles as the bearer token (see deps.get_current_user).
+        try:
+            user = self._sync_client.get_user_by_email(email)
+        except NotFoundError:
+            # Don't disclose whether the email exists; report a generic 401.
+            raise AuthenticationError("Invalid email or password") from None
+        if not verify_password(password, user["password_hash"]):
+            raise AuthenticationError("Invalid email or password")
+        name = user.get("full_name") or user["email"]
+        token = create_access_token(
+            user_id=str(user["id"]),
+            email=user["email"],
+            role=user["role"],
+            name=name,
+        )
         return LoginResponse(
-            access_token=str(user["id"]),
-            user={"id": str(user["id"]), "name": user.get("full_name") or user["email"]},
+            access_token=token,
+            user={"id": str(user["id"]), "name": name},
         )
 
     def get_profile(self, user_id: str) -> UserProfile:

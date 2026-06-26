@@ -19,7 +19,14 @@ async def upload_analyst_report(
     analyst_report_service: Annotated[AnalystReportService, Depends(get_analyst_report_service)],
 ) -> AnalystReportUploadResponse:
     file_bytes = await file.read()
-    return analyst_report_service.upload(company, broker, report_date, file_bytes)
+    return analyst_report_service.upload(
+        company,
+        broker,
+        report_date,
+        file_bytes,
+        file.filename or "report.pdf",
+        file.content_type or "application/octet-stream",
+    )
 
 
 @router.get("/companies/{symbol}/analyst-reports", response_model=list[AnalystReport])

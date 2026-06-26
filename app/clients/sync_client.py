@@ -19,6 +19,10 @@ class SyncServiceClient(BaseServiceClient):
     def get_user(self, user_id: int) -> JsonObject:
         return self.request("GET", f"/users/{user_id}").json()
 
+    def get_user_by_email(self, email_address: str) -> JsonObject:
+        """Fetch a user (incl. `password_hash`) by email for login verification."""
+        return self.request("GET", f"/users/email/{email_address}").json()
+
     def update_user(self, user_id: int, payload: JsonObject) -> JsonObject:
         return self.request("PATCH", f"/users/{user_id}", json=payload).json()
 
@@ -94,11 +98,34 @@ class SyncServiceClient(BaseServiceClient):
         self.request("DELETE", f"/chunks/{chunk_id}")
 
     # -- analyst reports ------------------------------------------------
-    def create_analyst_report(self, payload: JsonObject) -> JsonObject:
-        return self.request("POST", "/analyst-reports", json=payload).json()
+    def create_analyst_report(
+        self,
+        *,
+        company_symbol: str,
+        file_bytes: bytes,
+        filename: str,
+        content_type: str,
+        broker_name: str | None = None,
+        report_date: str | None = None,
+        sentiment_score: float | None = None,
+    ) -> JsonObject:
+        """Upload an analyst report PDF via `POST /analyst-reports` (multipart)."""
+        data: JsonObject = {"company_symbol": company_symbol}
+        if broker_name is not None:
+            data["broker_name"] = broker_name
+        if report_date is not None:
+            data["report_date"] = report_date
+        if sentiment_score is not None:
+            data["sentiment_score"] = sentiment_score
+        files = {"file": (filename, file_bytes, content_type)}
+        return self.request("POST", "/analyst-reports", data=data, files=files).json()
 
-    def list_analyst_reports(self, *, skip: int = 0, limit: int = 100) -> list[JsonObject]:
-        params = {"skip": skip, "limit": limit}
+    def list_analyst_reports(self, company_symbol: str) -> JsonObject:
+        """List a company's analyst reports (+ documents) via `GET /analyst-reports`.
+
+        Returns the `AnalystReportListResponse` body: `{analyst_reports, documents}`.
+        """
+        params = {"company_symbol": company_symbol}
         return self.request("GET", "/analyst-reports", params=params).json()
 
     def get_analyst_report(self, report_id: int) -> JsonObject:

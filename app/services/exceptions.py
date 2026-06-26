@@ -9,6 +9,10 @@ class NotFoundError(ServiceError):
     """Raised when a symbol, document_id, or watchlist entry cannot be found."""
 
 
+class AuthenticationError(ServiceError):
+    """Raised when credentials are invalid or a token cannot be verified (HTTP 401)."""
+
+
 class ConflictError(ServiceError):
     """Raised when a resource already exists (e.g. company already in watchlist)."""
 

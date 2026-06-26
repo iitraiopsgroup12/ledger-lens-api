@@ -18,11 +18,19 @@ class Settings:
     sync_service_url: str
     rag_service_url: str
     request_timeout_seconds: float
+    jwt_secret: str
+    jwt_algorithm: str
+    jwt_expiry_hours: int
 
 
 def get_settings() -> Settings:
     return Settings(
         sync_service_url=os.environ.get("LEDGER_LENS_SYNC_URL", "http://ledger-lens-sync"),
         rag_service_url=os.environ.get("LEDGER_LENS_RAG_URL", "http://ledger-lens-rag"),
-        request_timeout_seconds=float(os.environ.get("BACKEND_REQUEST_TIMEOUT_SECONDS", "10")),
+        request_timeout_seconds=float(os.environ.get("BACKEND_REQUEST_TIMEOUT_SECONDS", "1800")),
+        # JWT_SECRET must be overridden in every non-local environment; the default
+        # is only safe for local development (see .env.example).
+        jwt_secret=os.environ.get("JWT_SECRET", "dev-only-insecure-change-me-0123456789abcdef"),
+        jwt_algorithm=os.environ.get("JWT_ALGORITHM", "HS256"),
+        jwt_expiry_hours=int(os.environ.get("JWT_EXPIRY_HOURS", "24")),
     )
