@@ -22,6 +22,15 @@ _STATUS_BY_ERROR: dict[type[ServiceError], int] = {
     ProcessingError: 422,
 }
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.exception_handler(ServiceError)
 def handle_service_error(request: Request, exc: ServiceError) -> JSONResponse:

@@ -8,7 +8,6 @@ from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-
 @router.post("/login", response_model=LoginResponse)
 def login(
     payload: LoginRequest,
