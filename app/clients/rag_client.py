@@ -26,5 +26,19 @@ class RagServiceClient(BaseServiceClient):
             "POST", "/api/v1/query-with-file", data=data, files={"file": file}
         ).json()
 
+    # -- KPI human-in-the-loop chat -------------------------------------
+    def kpi_chat(
+        self, *, email: str, symbol: str, message: str, session_id: str | None = None
+    ) -> JsonObject:
+        """Initiate a KPI chat via `POST /api/v1/kpi/chat` (form-urlencoded)."""
+        data = {"email": email, "symbol": symbol, "message": message}
+        if session_id is not None:
+            data["session_id"] = session_id
+        return self.request("POST", "/api/v1/kpi/chat", data=data).json()
+
+    def kpi_approve(self, payload: JsonObject) -> JsonObject:
+        """Resume a paused KPI chat via `POST /api/v1/kpi/approve` (JSON)."""
+        return self.request("POST", "/api/v1/kpi/approve", json=payload).json()
+
     def health(self) -> JsonObject:
         return self.request("GET", "/api/v1/health").json()

@@ -56,4 +56,12 @@ def health_check() -> dict[str, str]:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8001, reload=True)
+    # 30-minute keep-alive to match the 30-min backend request timeout
+    # (BACKEND_REQUEST_TIMEOUT_SECONDS); long RAG/KPI calls hold the connection.
+    uvicorn.run(
+        "app.main:app",
+        host="127.0.0.1",
+        port=8001,
+        reload=True,
+        timeout_keep_alive=1800,
+    )

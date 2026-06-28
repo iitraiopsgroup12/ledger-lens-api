@@ -23,6 +23,7 @@ from app.services.chat_service import ChatService, RagChatService
 from app.services.company_service import CompanyService, InMemoryCompanyService
 from app.services.dashboard_service import DashboardService, InMemoryDashboardService
 from app.services.document_service import DocumentService, SyncDocumentService
+from app.services.kpi_service import KpiService, RagKpiService
 from app.services.onboard_service import OnboardService, SyncOnboardService
 from app.services.scheduler_service import InMemorySchedulerService, SchedulerService
 from app.services.watchlist_service import SyncWatchlistService, WatchlistService
@@ -65,6 +66,11 @@ def get_document_service() -> DocumentService:
 @lru_cache
 def get_chat_service() -> ChatService:
     return RagChatService(get_rag_client())
+
+
+@lru_cache
+def get_kpi_service() -> KpiService:
+    return RagKpiService(get_rag_client())
 
 
 @lru_cache
