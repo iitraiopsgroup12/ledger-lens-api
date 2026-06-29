@@ -1,0 +1,111 @@
+# Default values for ledger-lens-api.
+
+replicaCount: 1
+
+image:
+  repository: localhost/ledger-lens-api
+  pullPolicy: IfNotPresent
+  # Defaults to .Chart.AppVersion when empty. Prefer an immutable tag in prod.
+  tag: "1.4"
+
+# Secrets for pulling from a private registry, e.g.:
+#   imagePullSecrets:
+#     - name: regcred
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# The port the container/uvicorn listens on (wired to PORT env + probes).
+containerPort: 8001
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/tls-acme: "true"
+    # nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
+  hosts:
+    - host: ledger-lens-api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: ledger-lens-api-tls
+    #   hosts:
+    #     - ledger-lens-api.example.com
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 75
+  # targetMemoryUtilizationPercentage: 80
+
+# Pod-level security context.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 999
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container-level security context (matches the non-root image).
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# Non-secret runtime configuration -> rendered into a ConfigMap.
+config:
+  LEDGER_LENS_SYNC_URL: "http://ledger-lens-sync.iitr-test.svc.cluster.local:8000"
+  LEDGER_LENS_RAG_URL: "http://ledger-lens-rag.iitr-test.svc.cluster.local:8080"
+  BACKEND_REQUEST_TIMEOUT_SECONDS: "1800"
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRY_HOURS: "24"
+  # Application log level (DEBUG, INFO, WARNING, ERROR). DEBUG enables
+  # per-request HTTP tracing.
+  LOG_LEVEL: "DEBUG"
+
+# Secret values. By default the chart creates a Secret from these; for real
+# deployments leave create=false and reference an externally-managed Secret via
+# existingSecret (e.g. sealed-secrets / external-secrets / kubectl create).
+secret:
+  create: true
+  existingSecret: ""
+  data:
+    JWT_SECRET: "CHANGE-ME-use-openssl-rand-hex-32"
+
+# Probes hit the FastAPI /healthz endpoint.
+probes:
+  startup:
+    failureThreshold: 30
+    periodSeconds: 2
+  liveness:
+    periodSeconds: 15
+    timeoutSeconds: 3
+  readiness:
+    periodSeconds: 10
+    timeoutSeconds: 3
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

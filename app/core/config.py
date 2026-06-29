@@ -21,6 +21,7 @@ class Settings:
     jwt_secret: str
     jwt_algorithm: str
     jwt_expiry_hours: int
+    log_level: str
 
 
 def get_settings() -> Settings:
@@ -33,4 +34,5 @@ def get_settings() -> Settings:
         jwt_secret=os.environ.get("JWT_SECRET", "dev-only-insecure-change-me-0123456789abcdef"),
         jwt_algorithm=os.environ.get("JWT_ALGORITHM", "HS256"),
         jwt_expiry_hours=int(os.environ.get("JWT_EXPIRY_HOURS", "24")),
+        log_level=os.environ.get("LOG_LEVEL", "DEBUG").upper(),
     )

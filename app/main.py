@@ -1,9 +1,12 @@
 """FastAPI app initialization, global middleware, and exception handlers."""
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
+from app.core.config import get_settings
+from app.core.logging import RequestTracingMiddleware, configure_logging
 from app.services.exceptions import (
     AuthenticationError,
     ConflictError,
@@ -11,6 +14,8 @@ from app.services.exceptions import (
     ProcessingError,
     ServiceError,
 )
+
+configure_logging()
 
 app = FastAPI(
     title="LedgerLens.ai Platform API",
@@ -29,11 +34,16 @@ _STATUS_BY_ERROR: dict[type[ServiceError], int] = {
     ProcessingError: 422,
 }
 
-from fastapi.middleware.cors import CORSMiddleware
+# Trace every HTTP request/response (added before CORS so it wraps the
+# outermost layer and times the full request).
+app.add_middleware(RequestTracingMiddleware)
 
+# Allow all cross-origin requests (clients run in-cluster). `allow_origin_regex`
+# matches any origin AND echoes it back, so credentialed requests work too —
+# unlike `allow_origins=["*"]`, which the spec forbids pairing with credentials.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,4 +74,5 @@ if __name__ == "__main__":
         port=8001,
         reload=True,
         timeout_keep_alive=1800,
+        log_level=get_settings().log_level.lower(),
     )

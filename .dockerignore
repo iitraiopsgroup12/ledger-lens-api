@@ -1,0 +1,28 @@
+# Virtualenvs & caches
+.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secrets & local env — never bake these into the image
+.env
+*.env
+!.env.example
+
+# VCS & IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Docs & local-only artifacts
+docs/
+*.md
+!README.md
+
+# OS cruft
+.DS_Store
+Thumbs.db

@@ -6,12 +6,18 @@ maps sync's `DocumentRead` (keyed by integer `company_id`) onto the API's
 symbol-oriented schemas.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from datetime import date, datetime
+from typing import get_args
 
 from app.clients.sync_client import JsonObject, SyncServiceClient
-from app.schemas.document import DocumentDetails, DocumentSummary, DownloadResponse
+from app.schemas.document import DocumentDetails, DocumentSummary, DocumentType, DownloadResponse
 from app.services.exceptions import NotFoundError
+
+logger = logging.getLogger(__name__)
+
+_DOCUMENT_TYPES: frozenset[str] = frozenset(get_args(DocumentType))
 
 
 class DocumentService(ABC):
@@ -78,11 +84,28 @@ def _to_summary(doc: JsonObject) -> DocumentSummary:
     return DocumentSummary(
         document_id=str(doc["id"]),
         title=doc.get("document_title") or "",
-        type=doc["document_type"],
+        type=_to_document_type(doc),
         report_year=doc.get("report_year"),
         processing_status=doc["processing_status"],
         upload_date=_to_date(doc.get("upload_date")),
     )
+
+
+def _to_document_type(doc: JsonObject) -> DocumentType:
+    """Map sync's `document_type` onto the API contract.
+
+    Sync occasionally returns values outside the documented enum
+    (e.g. 'analyst_report'); coerce those to 'other' rather than 500.
+    """
+    raw = doc.get("document_type")
+    if raw in _DOCUMENT_TYPES:
+        return raw  # type: ignore[return-value]
+    logger.warning(
+        "Document %s has out-of-contract document_type %r; mapping to 'other'",
+        doc.get("id"),
+        raw,
+    )
+    return "other"
 
 
 def _to_date(value: str | None) -> date | None:
@@ -97,7 +120,7 @@ def _to_details(doc: JsonObject, company_symbol: str) -> DocumentDetails:
         id=str(doc["id"]),
         company_symbol=company_symbol,
         title=doc.get("document_title") or "",
-        type=doc["document_type"],
+        type=_to_document_type(doc),
         s3_key=doc.get("s3_key"),
         processing_status=doc["processing_status"],
     )

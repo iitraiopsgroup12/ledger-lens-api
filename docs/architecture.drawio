@@ -1,0 +1,258 @@
+<mxfile host="app.diagrams.net" agent="Claude Code">
+  <diagram id="ledgerlens-api" name="LedgerLens API - Proxy Architecture">
+    <mxGraphModel dx="673" dy="370" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2050" pageHeight="1120" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1;fontColor=#1A1A2E;" value="LedgerLens.ai Platform API — Auth/Authorization Proxy (FastAPI)" vertex="1">
+          <mxGeometry height="34" width="1050" x="500" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#555;" value="Flow left to right: REST Clients → LedgerLens API Proxy (authenticate · issue/verify JWT · stateless sessions · forward each endpoint) → Backend services (RAG / Sync)." vertex="1">
+          <mxGeometry height="24" width="1050" x="500" y="54" as="geometry" />
+        </mxCell>
+        <mxCell id="clients_lane" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;verticalAlign=top;fontStyle=1;fontSize=14;fontColor=#0D47A1;arcSize=4;" value="3 · REST Clients" vertex="1">
+          <mxGeometry height="620" width="230" x="40" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="client_spa" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=12;" value="Web SPA / Frontend&#xa;(Bearer JWT in Authorization header)" vertex="1">
+          <mxGeometry height="60" width="190" x="70" y="485" as="geometry" />
+        </mxCell>
+        <mxCell id="client_swagger" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=12;" value="Swagger UI&#xa;/docs (OpenAPI)" vertex="1">
+          <mxGeometry height="50" width="190" x="70" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="client_curl" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=12;" value="API consumers&#xa;(curl / httpx / Postman)" vertex="1">
+          <mxGeometry height="50" width="190" x="70" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="client_note" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;fontSize=11;dashed=1;" value="All clients hit&#xa;/api/v1/*&#xa;CORS: allow *&#xa;(GET/POST/PATCH/DELETE)" vertex="1">
+          <mxGeometry height="80" width="190" x="60" y="355" as="geometry" />
+        </mxCell>
+        <mxCell id="client_login_lbl" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#C62828;fontSize=11;align=left;spacingLeft=6;" value="① POST /auth/login&#xa;(unauthenticated)" vertex="1">
+          <mxGeometry height="50" width="190" x="50" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="client_bearer_lbl" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#C62828;fontSize=11;align=left;spacingLeft=6;" value="② Every other call carries&#xa;Authorization: Bearer &lt;jwt&gt;" vertex="1">
+          <mxGeometry height="50" width="190" x="50" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="proxy_lane" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;verticalAlign=top;fontStyle=1;fontSize=14;fontColor=#4A148C;arcSize=2;" value="LedgerLens API Proxy  ·  FastAPI app (app.main:app) mounted at /api/v1  ·  Uvicorn ASGI" vertex="1">
+          <mxGeometry height="620" width="1190" x="300" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#C62828;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#B71C1C;arcSize=3;" value="1 · Authentication, JWT &amp; Session management" vertex="1">
+          <mxGeometry height="565" width="275" x="315" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_bearer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#C62828;fontSize=11;" value="HTTPBearer security scheme&#xa;extracts Authorization: Bearer token" vertex="1">
+          <mxGeometry height="55" width="245" x="330" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_getuser" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#C62828;fontSize=11;" value="get_current_user / require_admin&#xa;(api/deps.py)&#xa;decode + verify JWT → UserProfile&#xa;role check (admin)" vertex="1">
+          <mxGeometry height="75" width="245" x="330" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_security" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#C62828;fontSize=11;align=left;spacingLeft=8;" value="core/security.py — JWT &amp; passwords&#xa;• create_access_token() — sign HS256 JWT&#xa;   claims: sub, email, role, name, iat, exp&#xa;• decode_access_token() — verify sig+expiry&#xa;• verify_password() — bcrypt.checkpw" vertex="1">
+          <mxGeometry height="110" width="245" x="330" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_session" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;fontSize=11;align=left;spacingLeft=8;dashed=1;" value="Session model = STATELESS&#xa;No server-side session store. Identity&#xa;lives in the signed JWT (24h, JWT_SECRET);&#xa;re-presented on every request." vertex="1">
+          <mxGeometry height="85" width="245" x="330" y="455" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_service" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#C62828;fontSize=11;align=left;spacingLeft=8;" value="auth_service.py — SyncAuthService&#xa;login(): look up user in Sync → verify&#xa;bcrypt hash → mint JWT&#xa;get_profile(): fetch user from Sync" vertex="1">
+          <mxGeometry height="130" width="245" x="330" y="555" as="geometry" />
+        </mxCell>
+        <mxCell id="routers_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#1B5E20;arcSize=3;" value="2 · API v1 Routers (transport)&#xa;each endpoint forwards via a Service" vertex="1">
+          <mxGeometry height="565" width="245" x="610" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="r_auth" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=11;" value="/auth · login, profile" vertex="1">
+          <mxGeometry height="34" width="215" x="625" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="r_watchlist" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=11;" value="/watchlist · CRUD" vertex="1">
+          <mxGeometry height="34" width="215" x="625" y="225" as="geometry" />
+        </mxCell>
+        <mxCell id="r_documents" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=11;" value="/companies/{sym}/documents&#xa;/documents/{id} · /download" vertex="1">
+          <mxGeometry height="44" width="215" x="625" y="265" as="geometry" />
+        </mxCell>
+        <mxCell id="r_onboard" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=11;" value="/onboard · trigger ingest" vertex="1">
+          <mxGeometry height="34" width="215" x="625" y="315" as="geometry" />
+        </mxCell>
+        <mxCell id="r_analyst" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=11;" value="/analyst-reports&#xa;/companies/{sym}/sentiment" vertex="1">
+          <mxGeometry height="44" width="215" x="625" y="355" as="geometry" />
+        </mxCell>
+        <mxCell id="r_chat" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=11;" value="/chat · ask, history" vertex="1">
+          <mxGeometry height="34" width="215" x="625" y="405" as="geometry" />
+        </mxCell>
+        <mxCell id="r_kpi" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=11;" value="/kpi · chat, approve (HITL)" vertex="1">
+          <mxGeometry height="34" width="215" x="625" y="445" as="geometry" />
+        </mxCell>
+        <mxCell id="r_companies" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9E9E9E;fontSize=11;" value="/companies · search, profile" vertex="1">
+          <mxGeometry height="34" width="215" x="625" y="485" as="geometry" />
+        </mxCell>
+        <mxCell id="r_dashboard" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9E9E9E;fontSize=11;" value="/dashboard" vertex="1">
+          <mxGeometry height="30" width="215" x="625" y="525" as="geometry" />
+        </mxCell>
+        <mxCell id="r_scheduler" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9E9E9E;fontSize=11;" value="/scheduler · run, status (admin)" vertex="1">
+          <mxGeometry height="30" width="215" x="625" y="561" as="geometry" />
+        </mxCell>
+        <mxCell id="di_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2F1;strokeColor=#00695C;fontSize=12;align=center;verticalAlign=top;fontStyle=1;fontColor=#004D40;arcSize=4;" value="Service / DI layer&#xa;deps.py · lru_cache singletons" vertex="1">
+          <mxGeometry height="565" width="215" x="875" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_sync" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=11;" value="Sync-backed services&#xa;SyncAuth · SyncWatchlist&#xa;SyncDocument · SyncOnboard&#xa;SyncAnalystReport" vertex="1">
+          <mxGeometry height="130" width="185" x="890" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_rag" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=11;" value="RAG-backed services&#xa;RagChatService&#xa;RagKpiService" vertex="1">
+          <mxGeometry height="90" width="185" x="890" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_inmem" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#9E9E9E;fontSize=11;dashed=1;" value="In-memory placeholders&#xa;InMemoryCompany&#xa;InMemoryDashboard&#xa;InMemoryScheduler&#xa;(seed data — TODO: wire backend)" vertex="1">
+          <mxGeometry height="120" width="185" x="890" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="restclient_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#0D47A1;arcSize=3;" value="3 · REST client (outbound)&#xa;app/clients · httpx.Client" vertex="1">
+          <mxGeometry height="565" width="360" x="1110" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="rc_base" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=11;align=left;spacingLeft=8;" value="BaseServiceClient (clients/base.py)&#xa;• httpx.Client(base_url, timeout=1800s)&#xa;• request(method, path, ...) — forward path&#xa;• upstream 404/409/422 → ServiceError&#xa;• no Authorization header to backends" vertex="1">
+          <mxGeometry height="110" width="330" x="1125" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="errmap" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;fontSize=11;align=left;spacingLeft=8;dashed=1;" value="Exception handler (main.py): ServiceError → HTTP&#xa;Auth→401 · NotFound→404 · Conflict→409&#xa;Processing→422 · else→500" vertex="1">
+          <mxGeometry height="80" width="330" x="1125" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="rc_sync" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=11;align=left;spacingLeft=8;" value="SyncServiceClient → ledger-lens-sync&#xa;/users · /companies · /watchlists&#xa;/documents · /chunks&#xa;/analyst-reports · /update-logs · /onboard" vertex="1">
+          <mxGeometry height="135" width="330" x="1125" y="395" as="geometry" />
+        </mxCell>
+        <mxCell id="rc_rag" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=11;align=left;spacingLeft=8;" value="RagServiceClient → ledger-lens-rag&#xa;/api/v1/ingest · /ingest/file&#xa;/query · /query-with-file&#xa;/kpi/chat · /kpi/approve" vertex="1">
+          <mxGeometry height="135" width="330" x="1125" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="backend_lane" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBE9E7;strokeColor=#D84315;verticalAlign=top;fontStyle=1;fontSize=14;fontColor=#BF360C;arcSize=3;" value="Backend services&amp;nbsp;&lt;div&gt;(in-cluster · Kubernetes Service DNS)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="620" width="340" x="1520" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="be_sync" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=12;align=left;spacingLeft=10;verticalAlign=top;" value="ledger-lens-sync&#xa;http://ledger-lens-sync&#xa;&#xa;System of record (Postgres-backed):&#xa;users, companies, watchlists,&#xa;documents, chunks,&#xa;analyst-reports, update-logs,&#xa;onboarding" vertex="1">
+          <mxGeometry height="240" width="250" x="1540" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="be_rag" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=12;align=left;spacingLeft=10;verticalAlign=top;" value="ledger-lens-rag&#xa;http://ledger-lens-rag&#xa;&#xa;RAG pipeline / LLM:&#xa;ingest filings, vector query,&#xa;chat over filings,&#xa;KPI human-in-the-loop chat/approve" vertex="1">
+          <mxGeometry height="240" width="270" x="1540" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_lane" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#37474F;verticalAlign=top;fontStyle=1;fontSize=16;fontColor=#263238;arcSize=2;" value="4 · Tools &amp; Technologies" vertex="1">
+          <mxGeometry height="320" width="1970" x="40" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_lang" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#37474F;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="Language &amp; Runtime&#xa;• Python &gt;= 3.14 (.python-version)&#xa;• uv — dependency &amp; venv manager&#xa;• python-dotenv — .env config" vertex="1">
+          <mxGeometry height="120" width="300" x="60" y="795" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_web" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#37474F;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="Web / API framework&#xa;• FastAPI — routing, DI, OpenAPI&#xa;• Uvicorn[standard] — ASGI server&#xa;• Pydantic[email] — schemas/validation&#xa;• python-multipart — file uploads&#xa;• CORS middleware" vertex="1">
+          <mxGeometry height="120" width="300" x="380" y="795" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_auth" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#37474F;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="Auth &amp; Security&#xa;• PyJWT — JWT sign/verify (HS256)&#xa;• bcrypt — password hash check&#xa;• HTTPBearer — token extraction&#xa;• Stateless sessions (no store)" vertex="1">
+          <mxGeometry height="120" width="300" x="700" y="795" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_http" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#37474F;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="Outbound HTTP&#xa;• httpx — sync client to backends&#xa;• Typed Sync/Rag service clients&#xa;• 30-min (1800s) request timeout" vertex="1">
+          <mxGeometry height="120" width="300" x="1020" y="795" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_infra" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#37474F;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="Architecture &amp; Infra&#xa;• Clean architecture (routers/services/clients)&#xa;• Constructor-free DI (lru_cache singletons)&#xa;• Kubernetes (Service DNS to backends)&#xa;• OpenAPI spec-driven (open-api-spec.json)&#xa;• Backends: Postgres / S3 / Pinecone / Gemini" vertex="1">
+          <mxGeometry height="120" width="340" x="1340" y="795" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_legend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=11;align=left;spacingLeft=8;verticalAlign=top;" value="Edge legend&#xa;━━ blue → Sync service&#xa;━━ green → RAG service&#xa;┅┅ gray → in-memory placeholder&#xa;━━ red → auth / JWT flow" vertex="1">
+          <mxGeometry height="120" width="290" x="1700" y="795" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_run" parent="1" style="text;html=1;align=center;fontSize=12;fontStyle=2;fontColor=#37474F;" value="Run:  uv sync   ·   uv run uvicorn app.main:app --reload --port 8001   ·   docs at /docs   ·   health at /healthz" vertex="1">
+          <mxGeometry height="28" width="1930" x="60" y="945" as="geometry" />
+        </mxCell>
+        <mxCell id="tech_config" parent="1" style="text;html=1;align=center;fontSize=11;fontColor=#607D8B;" value="Key config (env): LEDGER_LENS_SYNC_URL · LEDGER_LENS_RAG_URL · JWT_SECRET · JWT_ALGORITHM (HS256) · JWT_EXPIRY_HOURS (24) · BACKEND_REQUEST_TIMEOUT_SECONDS (1800)" vertex="1">
+          <mxGeometry height="28" width="1930" x="60" y="978" as="geometry" />
+        </mxCell>
+        <mxCell id="e_login" edge="1" parent="1" source="client_login_lbl" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;fontSize=10;" target="auth_service" value="login">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="280" y="210" />
+              <mxPoint x="280" y="620" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_bearer" edge="1" parent="1" source="client_bearer_lbl" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;fontSize=10;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="auth_bearer" value="bearer">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="290" y="275" />
+              <mxPoint x="290" y="198" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_clientspa" edge="1" parent="1" source="client_spa" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6A1B9A;strokeWidth=2;endArrow=block;fontSize=10;" target="routers_box" value="/api/v1/*">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="165" y="460" />
+              <mxPoint x="290" y="460" />
+              <mxPoint x="290" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_bearer_getuser" edge="1" parent="1" source="auth_bearer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;" target="auth_getuser">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_getuser_sec" edge="1" parent="1" source="auth_getuser" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;" target="auth_security">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_authsvc_sec" edge="1" parent="1" source="auth_service" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;fontSize=10;" target="auth_security" value="mint JWT">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="600" y="620" />
+              <mxPoint x="600" y="385" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_auth_routers" edge="1" parent="1" source="auth_getuser" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C62828;endArrow=block;dashed=1;fontSize=10;" target="r_auth" value="authorize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rauth" edge="1" parent="1" source="r_auth" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;endArrow=block;" target="svc_sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rwatch" edge="1" parent="1" source="r_watchlist" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;endArrow=block;" target="svc_sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rdoc" edge="1" parent="1" source="r_documents" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;endArrow=block;" target="svc_sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ronb" edge="1" parent="1" source="r_onboard" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;endArrow=block;" target="svc_sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ranalyst" edge="1" parent="1" source="r_analyst" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;endArrow=block;" target="svc_sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rchat" edge="1" parent="1" source="r_chat" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1565C0;endArrow=block;" target="svc_rag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rkpi" edge="1" parent="1" source="r_kpi" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1565C0;endArrow=block;" target="svc_rag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rcomp" edge="1" parent="1" source="r_companies" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9E9E9E;endArrow=block;dashed=1;" target="svc_inmem">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rdash" edge="1" parent="1" source="r_dashboard" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9E9E9E;endArrow=block;dashed=1;" target="svc_inmem">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rsched" edge="1" parent="1" source="r_scheduler" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9E9E9E;endArrow=block;dashed=1;" target="svc_inmem">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svcsync_rc" edge="1" parent="1" source="svc_sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="rc_sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svcrag_rc" edge="1" parent="1" source="svc_rag" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.002;entryY=0.362;entryDx=0;entryDy=0;entryPerimeter=0;" target="rc_rag">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1080" y="385" />
+              <mxPoint x="1080" y="525" />
+              <mxPoint x="1110" y="525" />
+              <mxPoint x="1110" y="594" />
+            </Array>
+            <mxPoint x="1050" y="380" as="sourcePoint" />
+            <mxPoint x="1265" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_authsvc_rc" edge="1" parent="1" source="auth_service" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;endArrow=block;fontSize=10;dashed=1;" target="rc_sync" value="lookup user">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1100" y="620" />
+              <mxPoint x="1100" y="463" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_base_sync" edge="1" parent="1" source="rc_base" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1565C0;endArrow=block;dashed=1;" target="rc_sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rcsync_be" edge="1" parent="1" source="rc_sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;fontSize=10;" target="be_sync" value="HTTP/JSON">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rcrag_be" edge="1" parent="1" source="rc_rag" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1565C0;strokeWidth=2;endArrow=block;fontSize=10;" target="be_rag" value="HTTP/JSON">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

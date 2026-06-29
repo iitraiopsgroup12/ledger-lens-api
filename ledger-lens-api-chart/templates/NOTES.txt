@@ -1,0 +1,25 @@
+{{ .Chart.Name }} ({{ .Chart.AppVersion }}) has been deployed as release "{{ .Release.Name }}".
+
+Image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+
+Check rollout:
+  kubectl rollout status deployment/{{ include "ledger-lens-api.fullname" . }} -n {{ .Release.Namespace }}
+
+{{- if .Values.ingress.enabled }}
+Reachable via Ingress:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+Port-forward locally:
+  kubectl port-forward svc/{{ include "ledger-lens-api.fullname" . }} 8001:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+  # then open http://127.0.0.1:8001/docs  (health: /healthz)
+{{- end }}
+
+{{- if and .Values.secret.create (eq (default "" .Values.secret.existingSecret) "") (eq .Values.secret.data.JWT_SECRET "CHANGE-ME-use-openssl-rand-hex-32") }}
+
+WARNING: JWT_SECRET is still the placeholder value. Override it before exposing
+this service, e.g.:
+  --set secret.data.JWT_SECRET="$(openssl rand -hex 32)"
+  or point secret.existingSecret at an externally-managed Secret.
+{{- end }}
